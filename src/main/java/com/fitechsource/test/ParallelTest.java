@@ -26,6 +26,11 @@ public class ParallelTest {
 
         for (int i = 0; i < TestConsts.MAX_THREADS; i++) {
             Thread thread = new CalculatingThread(res, createSequenceForCalculating(i));
+            thread.setUncaughtExceptionHandler((t, e) -> {
+                if (e.getMessage().equals("Error during calculating")) {
+                    throw new CalculationException();
+                }
+            });
             threads.add(thread);
             thread.start();
         }
@@ -65,8 +70,14 @@ class CalculatingThread extends Thread {
     public void run() {
         for (Integer value : values) {
             try {
+
+                //checking
+                System.out.println(Thread.currentThread().getId() + " " + Thread.currentThread().getState());
+                if (Thread.currentThread().getId() == 12) Thread.currentThread().interrupt();
+
                 res.addAll(TestCalc.calculate(value));
             } catch (TestException e) {
+                Thread.currentThread().interrupt();
                 throw new CalculationException("Error during calculating", e);
             }
         }
