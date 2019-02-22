@@ -16,6 +16,8 @@ import java.util.*;
 
 public class Test {
     public static void main(String[] args) throws TestException {
+        long start = System.currentTimeMillis();
+
         Set<Double> res = new HashSet<>();
 
         for (int i = 0; i < TestConsts.N; i++) {
@@ -23,5 +25,8 @@ public class Test {
         }
 
         System.out.println(res);
+
+        long time = System.currentTimeMillis() - start;
+        System.out.println("\n" + "Work done in " + time + " milliseconds");
     }
 }

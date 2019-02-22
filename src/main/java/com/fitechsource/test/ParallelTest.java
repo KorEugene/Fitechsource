@@ -15,6 +15,7 @@ import java.util.*;
  */
 
 public class ParallelTest {
+
     public static void main(String[] args) {
         Set<Double> res = calculateAsynchronously();
         System.out.println(res);
@@ -24,26 +25,38 @@ public class ParallelTest {
         Set<Double> res = Collections.synchronizedSet(new HashSet<>());
         List<Thread> threads = new ArrayList<>();
 
+        createAndStartThreads(res, threads);
+        waitThreadsExecuting(threads);
+        return res;
+    }
+
+    private static void createAndStartThreads(Set<Double> res, List<Thread> threads) {
         for (int i = 0; i < TestConsts.MAX_THREADS; i++) {
             Thread thread = new CalculatingThread(res, createSequenceForCalculating(i));
-            thread.setUncaughtExceptionHandler((t, e) -> {
-                if (e.getMessage().equals("Error during calculating")) {
-                    throw new CalculationException();
-                }
-            });
+            thread.setUncaughtExceptionHandler((t, e) -> processExceptionAndEndProgram(e));
             threads.add(thread);
             thread.start();
         }
+    }
 
+    private static void waitThreadsExecuting(List<Thread> threads) {
         for (Thread thread : threads) {
             try {
                 thread.join();
             } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new CalculationException("Error during calculation waiting", e);
+                for (Thread t : threads) {
+                    t.interrupt();
+                }
+                processExceptionAndEndProgram(e);
             }
         }
-        return res;
+    }
+
+    private static void processExceptionAndEndProgram(Throwable throwable) {
+        System.out.println("Calculation  unsuccessful, exception caught");
+        throwable.printStackTrace();
+        System.exit(7);
+
     }
 
     private static List<Integer> createSequenceForCalculating(int startPosition) {
@@ -70,15 +83,9 @@ class CalculatingThread extends Thread {
     public void run() {
         for (Integer value : values) {
             try {
-
-                //checking
-                System.out.println(Thread.currentThread().getId() + " " + Thread.currentThread().getState());
-                if (Thread.currentThread().getId() == 12) Thread.currentThread().interrupt();
-
                 res.addAll(TestCalc.calculate(value));
             } catch (TestException e) {
-                Thread.currentThread().interrupt();
-                throw new CalculationException("Error during calculating", e);
+                throw new CalculationException("Exception during calculation", e);
             }
         }
     }
@@ -99,6 +106,3 @@ class CalculationException extends RuntimeException {
     }
 
 }
-
-
-
